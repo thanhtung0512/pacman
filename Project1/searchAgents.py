@@ -671,6 +671,15 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         nearest_food = min(
             food_list, key=lambda food: util.manhattanDistance(state, food)
         )
+        
+        for food in food_list:
+            distance = util.manhattanDistance(state, food)
+            if food == nearest_food:
+                print(f"This is the nearest food: {food} (distance: {distance})")
+            else:
+                print(f"Other food: {food} (distance: {distance})")
+
+
         if state == nearest_food:
             return True
 
