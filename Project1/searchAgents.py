@@ -457,9 +457,10 @@ def cornersHeuristic(state: Any, problem: CornersProblem) -> int:
         heuristic_cost += min_distance
 
         # Remove the closest corner from the list of unvisited corners
-        unvisited_corners = unvisited_corners[: unvisited_corners.index(closest_corner)] + unvisited_corners[
-                                                                                              unvisited_corners.index(
-                                                                                                  closest_corner) + 1:]
+        unvisited_corners = (
+            unvisited_corners[: unvisited_corners.index(closest_corner)]
+            + unvisited_corners[unvisited_corners.index(closest_corner) + 1 :]
+        )
 
         # Update the current node to the closest corner
         current_node = closest_corner
@@ -671,16 +672,18 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         nearest_food = min(
             food_list, key=lambda food: util.manhattanDistance(state, food)
         )
-        
+
         for food in food_list:
             distance = util.manhattanDistance(state, food)
-            if food == nearest_food:
-                print(f"This is the nearest food: {food} (distance: {distance})")
-            else:
-                print(f"Other food: {food} (distance: {distance})")
-
+            # if food == nearest_food:
+            #     print(f"This is the nearest food: {food} (distance: {distance})")
+            # else:
+            #     print(f"Other food: {food} (distance: {distance})")
 
         if state == nearest_food:
+            print(
+                f"\n \n Mahattan distance is {util.manhattanDistance(state, nearest_food)} \n "
+            )
             return True
 
         return False
