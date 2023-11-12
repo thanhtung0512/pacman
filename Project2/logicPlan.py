@@ -273,7 +273,29 @@ def pacphysicsAxioms(t: int, all_coords: List[Tuple], non_outer_wall_coords: Lis
     pacphysics_sentences = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Crafting logic for Pacman's spatial interactions at each coordinate
+    for spatial_point in all_coords:
+        x, y = spatial_point
+        pacphysics_sentences.append(PropSymbolExpr(wall_str, x, y) >> ~PropSymbolExpr(pacman_str, x, y, time=t))
+
+    # Ensuring Pacman resides uniquely at a non-wall location (x, y) at time t
+    potential_pacman_locations = [PropSymbolExpr(pacman_str, loc[0], loc[1], time=t) for loc in non_wall_coordinates]
+    unique_pacman_location_clause = exactlyOne(potential_pacman_locations)
+    pacphysics_sentences.append(unique_pacman_location_clause)
+
+    # Confirming Pacman undertakes only one action at time t
+    potential_actions = [PropSymbolExpr(action_str, time=t) for action_str in AVAILABLE_ACTIONS]
+    unique_action_clause = exactlyOne(potential_actions)
+    pacphysics_sentences.append(unique_action_clause)
+
+    # Integrating insights from the sensing model
+    if sensorModel is not None:
+        pacphysics_sentences.append(sensorModel(t, non_outer_wall_coords))
+
+    # Unveiling the consequences of successorAxioms
+    if successorAxioms is not None and t != 0:
+        pacphysics_sentences.append(successorAxioms(t, walls_grid, non_outer_wall_coords))
+
     "*** END YOUR CODE HERE ***"
 
     return conjoin(pacphysics_sentences)
