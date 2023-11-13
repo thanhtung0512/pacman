@@ -535,55 +535,66 @@ def mapping(problem, agent) -> Generator:
             outer_wall_sent.append(PropSymbolExpr(wall_str, x, y))
     KB.append(conjoin(outer_wall_sent))
     "*** BEGIN YOUR CODE HERE ***"
-
-    # Add initial Pacman location and wall information to KB and known_map
-    pac_loc_sent = PropSymbolExpr(pacman_str, pac_x_0, pac_y_0)
-    wall_sent = PropSymbolExpr(wall_str, pac_x_0, pac_y_0)
-    KB.append(pac_loc_sent)
-    KB.append(wall_sent)
-    known_map[pac_x_0][pac_y_0] = 1 if problem.walls[pac_x_0 - 1][pac_y_0 - 1] else 0
-
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
+    if known_map[pac_x_0][pac_y_0] == 1:
+        KB.append(PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
+    elif known_map[pac_x_0][pac_y_0] == 0:
+        KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
     # Iterate over the timesteps
     for t in range(agent.num_timesteps):
         # Add pacphysics, action, and percept information to KB
-        KB.append(pacphysicsAxioms(t, problem))
-        action_t = agent.actions[t]
-        KB.append(action_t)
+        pacphysics_axioms = pacphysicsAxioms(
+            t,
+            all_coords,
+            non_outer_wall_coords,
+            walls_grid=known_map,
+            sensorModel=sensorAxioms,
+            successorAxioms=allLegalSuccessorAxioms,
+        )
+        KB.append(pacphysics_axioms)
 
+        # Pacman takes action prescribed by agent.actions[t]
+        action_t = agent.actions[t]
+        KB.append(PropSymbolExpr(action_t, time=t))
+
+        # Get the percepts and add them to KB
         percepts = agent.getPercepts()
-        percept_rules = fourBitPerceptRules(t, percepts)
+        percept_rules = fourBitPerceptRules(
+            t=t, percepts=percepts
+        )  # Use fourBitPerceptRules or numAdjWallsPerceptRules
         KB.append(percept_rules)
 
-        # Find possible Pacman locations with updated KB
-        possible_locations = []
-        for x, y in non_outer_wall_coords:
-            pac_loc = PropSymbolExpr(pacman_str, x, y)
-            if not entails(KB, pac_loc) and not entails(KB, ~pac_loc):
-                continue
-
-            if entails(KB, pac_loc):
-                possible_locations.append((x, y))
-                KB.append(pac_loc)
-            if entails(KB, ~pac_loc):
-                known_map[x][y] = 0
-                KB.append(~pac_loc)
+        # Find possible pacman locations with updated KB
+        # possible_locations = []
+        # for x, y in non_outer_wall_coords:
+        #     pac_location_expr = PropSymbolExpr(pacman_str, x, y)
+        #     if entails(conjoin(KB), pac_location_expr):
+        #         possible_locations.append((x, y))
+        #     # Add to KB: (x, y) locations where Pacman is provably at, at time t
+        #     KB.append(
+        #         pac_location_expr
+        #         if entails(conjoin(KB), pac_location_expr)
+        #         else ~pac_location_expr
+        #     )
 
         # Find provable wall locations with updated KB
         for x, y in non_outer_wall_coords:
-            wall = PropSymbolExpr(wall_str, x, y)
-            if not entails(KB, wall) and not entails(KB, ~wall):
-                continue
-
-            if entails(KB, wall):
+            wall_location_expr = PropSymbolExpr(wall_str, x, y)
+            if entails(conjoin(KB), wall_location_expr) and not entails(
+                conjoin(KB), ~wall_location_expr
+            ):
+                KB.append(wall_location_expr)
                 known_map[x][y] = 1
-                KB.append(wall)
-            if entails(KB, ~wall):
-                known_map[x][y] = 0
-                KB.append(~wall)
+            elif entails(conjoin(KB), ~wall_location_expr) and not entails(
+                conjoin(KB), wall_location_expr
+            ):
+                KB.append(~wall_location_expr)
+                known_map[x][y] = 0 if entails(conjoin(KB), ~wall_location_expr) else -1
+            # Add to KB: (x, y) locations where there is provably a wall
 
-        # Move to the next state
         agent.moveToNextState(action_t)
 
+        # Yield the updated known_map
         yield known_map
 
 
