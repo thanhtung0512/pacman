@@ -564,32 +564,19 @@ def mapping(problem, agent) -> Generator:
         )  # Use fourBitPerceptRules or numAdjWallsPerceptRules
         KB.append(percept_rules)
 
-        # Find possible pacman locations with updated KB
-        # possible_locations = []
-        # for x, y in non_outer_wall_coords:
-        #     pac_location_expr = PropSymbolExpr(pacman_str, x, y)
-        #     if entails(conjoin(KB), pac_location_expr):
-        #         possible_locations.append((x, y))
-        #     # Add to KB: (x, y) locations where Pacman is provably at, at time t
-        #     KB.append(
-        #         pac_location_expr
-        #         if entails(conjoin(KB), pac_location_expr)
-        #         else ~pac_location_expr
-        #     )
-
         # Find provable wall locations with updated KB
         for x, y in non_outer_wall_coords:
             wall_location_expr = PropSymbolExpr(wall_str, x, y)
-            if entails(conjoin(KB), wall_location_expr) and not entails(
-                conjoin(KB), ~wall_location_expr
-            ):
+            conjoin_all_kb = conjoin(KB)
+            coinjoin_kb_wall_location = entails(conjoin_all_kb, wall_location_expr)
+            coinjoin_kb_not_wall_location = entails(conjoin_all_kb, ~wall_location_expr)
+
+            if coinjoin_kb_wall_location and not coinjoin_kb_not_wall_location:
                 KB.append(wall_location_expr)
                 known_map[x][y] = 1
-            elif entails(conjoin(KB), ~wall_location_expr) and not entails(
-                conjoin(KB), wall_location_expr
-            ):
+            elif coinjoin_kb_not_wall_location and not coinjoin_kb_wall_location:
                 KB.append(~wall_location_expr)
-                known_map[x][y] = 0 if entails(conjoin(KB), ~wall_location_expr) else -1
+                known_map[x][y] = 0 if coinjoin_kb_not_wall_location else -1
             # Add to KB: (x, y) locations where there is provably a wall
 
         agent.moveToNextState(action_t)
@@ -635,11 +622,88 @@ def slam(problem, agent) -> Generator:
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Initialize Pacman's initial location
+    # Adding Pacman's initial location to the knowledge base
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
 
+    # Updating KB based on the known_map information about Pacman's initial location
+    if known_map[pac_x_0][pac_y_0] == 1:
+        KB.append(PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
+    elif known_map[pac_x_0][pac_y_0] == 0:
+        KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
+
+    # Iterate over the timesteps
     for t in range(agent.num_timesteps):
-        "*** END YOUR CODE HERE ***"
+        # Add pacphysics, action, and percept information to KB
+        pacphysics_axioms = pacphysicsAxioms(
+            t,
+            all_coords,
+            non_outer_wall_coords,
+            walls_grid=known_map,
+            sensorModel=SLAMSensorAxioms,
+            successorAxioms=SLAMSuccessorAxioms,
+        )
+        KB.append(pacphysics_axioms)
+
+        # Pacman takes action prescribed by agent.actions[t]
+        action_t = agent.actions[t]
+        KB.append(PropSymbolExpr(action_t, time=t))
+
+        # Get the percepts and add them to KB
+        percepts = agent.getPercepts()
+        percept_rules = numAdjWallsPerceptRules(
+            t=t, percepts=percepts
+        )  # Use numAdjWallsPerceptRules for SLAM
+        KB.append(percept_rules)
+
+        # Find provable wall locations with updated KB
+        for x, y in non_outer_wall_coords:
+            wall_location_expr = PropSymbolExpr(wall_str, x, y)
+            conjoin_all_kb = conjoin(KB)
+            coinjoin_kb_wall_location = entails(conjoin_all_kb, wall_location_expr)
+            coinjoin_kb_not_wall_location = entails(conjoin_all_kb, ~wall_location_expr)
+
+            if coinjoin_kb_wall_location and not coinjoin_kb_not_wall_location:
+                # If KB entails there is a wall, update KB and known_map accordingly
+                KB.append(wall_location_expr)
+                known_map[x][y] = 1
+            elif coinjoin_kb_not_wall_location and not coinjoin_kb_wall_location:
+                # If KB entails there is no wall, update KB and known_map accordingly
+                KB.append(~wall_location_expr)
+                known_map[x][y] = 0 if coinjoin_kb_not_wall_location else -1
+
+        # Find possible pacman locations with updated KB
+        possible_locations = []
+        for x, y in non_outer_wall_coords:
+            pacman_location_expr = PropSymbolExpr(pacman_str, x, y, time=t)
+            conjoin_all_kb = conjoin(KB)
+            entails_kb_pacman_location = entails(conjoin_all_kb, pacman_location_expr)
+            entails_kb_not_pacman_location = entails(
+                conjoin_all_kb, ~pacman_location_expr
+            )
+
+            if entails(conjoin_all_kb, pacman_location_expr) and entails(
+                conjoin_all_kb, ~pacman_location_expr
+            ):
+                # If KB simultaneously entails Pacman is and is not at a location, raise an exception
+                util.raiseNotDefined()
+
+            # Check if the model satisfies the KB and Pacman is at the current location
+            if findModel(conjoin([conjoin_all_kb, pacman_location_expr])):
+                possible_locations.append((x, y))
+            
+            # Update KB based on the provable locations of Pacman
+            if entails_kb_pacman_location and not entails_kb_not_pacman_location:
+                KB.append(pacman_location_expr)
+            elif entails_kb_not_pacman_location and not entails_kb_pacman_location:
+                KB.append(~pacman_location_expr)
+
+        # Move Pacman to the next state based on the current action
+        agent.moveToNextState(action_t)
+        
+        # Yield the updated known_map and possible_locations
         yield (known_map, possible_locations)
+
 
 
 # Abbreviations
