@@ -53,9 +53,6 @@ class PerceptronModel(object):
         Train the perceptron until convergence.
         """
         "*** YOUR CODE HERE ***"
-
-        
-
         # Train the perceptron until convergence using the dataset
         converged = False
         batch_size = 1
@@ -63,7 +60,7 @@ class PerceptronModel(object):
             converged = True
             for x, y in dataset.iterate_once(batch_size):
                 # Check if the example is misclassified
-                print("x: ",x," \n  y: ",y)
+                print("x: ", x.data, " \n  y: ", y.data)
                 if self.get_prediction(x) != nn.as_scalar(y):
                     # Update weights if misclassified
                     direction = nn.Constant(x.data * nn.as_scalar(y))
