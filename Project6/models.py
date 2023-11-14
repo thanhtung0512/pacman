@@ -1,5 +1,6 @@
 import nn
 
+
 class PerceptronModel(object):
     def __init__(self, dimensions):
         """
@@ -27,6 +28,8 @@ class PerceptronModel(object):
         Returns: a node containing a single number (the score)
         """
         "*** YOUR CODE HERE ***"
+        # Calculate the score assigned by the perceptron to a data point x
+        return nn.DotProduct(x, self.w)
 
     def get_prediction(self, x):
         """
@@ -35,6 +38,15 @@ class PerceptronModel(object):
         Returns: 1 or -1
         """
         "*** YOUR CODE HERE ***"
+        # Calculate the predicted class for a single data point x
+        # Get the dot product result
+        dot_product_result = self.run(x)
+
+        # Extract the scalar value from the dot product result
+        dot_product_scalar = nn.as_scalar(dot_product_result)
+
+        # Return 1 if the dot product is non-negative, otherwise -1
+        return 1 if dot_product_scalar >= 0 else -1
 
     def train(self, dataset):
         """
@@ -42,12 +54,30 @@ class PerceptronModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        
+
+        # Train the perceptron until convergence using the dataset
+        converged = False
+        batch_size = 1
+        while not converged:
+            converged = True
+            for x, y in dataset.iterate_once(batch_size):
+                # Check if the example is misclassified
+                print("x: ",x," \n  y: ",y)
+                if self.get_prediction(x) != nn.as_scalar(y):
+                    # Update weights if misclassified
+                    direction = nn.Constant(x.data * nn.as_scalar(y))
+                    self.w.update(direction, 1)
+                    converged = False
+
+
 class RegressionModel(object):
     """
     A neural network model for approximating a function that maps from real
     numbers to real numbers. The network should be sufficiently large to be able
     to approximate sin(x) on the interval [-2pi, 2pi] to reasonable precision.
     """
+
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
@@ -81,6 +111,7 @@ class RegressionModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+
 class DigitClassificationModel(object):
     """
     A model for handwritten digit classification using the MNIST dataset.
@@ -95,6 +126,7 @@ class DigitClassificationModel(object):
     methods here. We recommend that you implement the RegressionModel before
     working on this part of the project.)
     """
+
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
@@ -136,6 +168,7 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+
 class LanguageIDModel(object):
     """
     A model for language identification at a single-word granularity.
@@ -144,6 +177,7 @@ class LanguageIDModel(object):
     methods here. We recommend that you implement the RegressionModel before
     working on this part of the project.)
     """
+
     def __init__(self):
         # Our dataset contains words from five different languages, and the
         # combined alphabets of the five languages contain a total of 47 unique
