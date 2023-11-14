@@ -66,6 +66,7 @@ class PerceptronModel(object):
                     direction = nn.Constant(x.data * nn.as_scalar(y))
                     self.w.update(direction, 1)
                     converged = False
+                    break
 
 
 class RegressionModel(object):
@@ -120,7 +121,14 @@ class RegressionModel(object):
         loss = nn.SquareLoss(predictions, y)
         return loss
 
-    def train(self, dataset, learning_rate=0.05, batch_size=200, num_epochs=1000, target_loss = 0.019):
+    def train(
+        self,
+        dataset,
+        learning_rate=0.05,
+        batch_size=200,
+        num_epochs=1000,
+        target_loss=0.019,
+    ):
         """
         Trains the model.
         """
@@ -156,7 +164,6 @@ class RegressionModel(object):
                 stop = True
                 break
 
-       
         final_loss = average_loss
         print(f"Final Loss: {final_loss}")
 
@@ -227,7 +234,7 @@ class LanguageIDModel(object):
     working on this part of the project.)
     """
 
-    def __init__(self):
+    def __init__(self, hidden_size=256, learning_rate=0.01):
         # Our dataset contains words from five different languages, and the
         # combined alphabets of the five languages contain a total of 47 unique
         # characters.
@@ -237,6 +244,12 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.hidden_size = hidden_size
+        self.learning_rate = learning_rate
+
+        self.W_initial = nn.Parameter(self.num_chars, self.hidden_size)
+        self.W_hidden = nn.Parameter(self.hidden_size, self.hidden_size)
+        self.W_output = nn.Parameter(self.hidden_size, len(self.languages))
 
     def run(self, xs):
         """
@@ -269,6 +282,14 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        h = nn.Linear(xs[0], self.W_initial)
+
+        for x in xs[1:]:
+            h = nn.Add(nn.Linear(x, self.W_initial), nn.Linear(h, self.W_hidden))
+
+            
+        return nn.Linear(h, self.W_output)
+
     def get_loss(self, xs, y):
         """
         Computes the loss for a batch of examples.
@@ -284,9 +305,32 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        predicted_scores = self.run(xs)
+        return nn.SoftmaxLoss(predicted_scores, y)
 
-    def train(self, dataset):
+    def train(self, dataset, num_epochs=2, batch_size=1000):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        num_batches = 0
+        for _ in dataset.iterate_once(batch_size):
+            num_batches += 1
+        for epoch in range(num_epochs):
+            total_loss = 0.0
+
+            for xs, y in dataset.iterate_once(1):
+                loss = self.get_loss(xs, y)
+
+                # Backward pass and parameter update
+                grads = nn.gradients(
+                    loss, [self.W_initial, self.W_hidden, self.W_output]
+                )
+                self.W_initial.update(grads[0], -self.learning_rate)
+                self.W_hidden.update(grads[1], -self.learning_rate)
+                self.W_output.update(grads[2], -self.learning_rate)
+
+                total_loss += nn.as_scalar(loss)
+
+            average_loss = total_loss / num_batches
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss}")
