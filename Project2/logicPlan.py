@@ -516,25 +516,42 @@ def foodLogicPlan(problem) -> List:
 
 # ______________________________________________________________________________
 # QUESTION 6
-def func1(t, all_coords, non_outer_wall_coords, walls_grid, sensorModel_arg, successorAxioms_arg, percepts_arg, agent, KB):
-
-    KB.append(pacphysicsAxioms(t, all_coords, non_outer_wall_coords, walls_grid, sensorModel= sensorModel_arg ,successorAxioms= successorAxioms_arg))
-    KB.append(PropSymbolExpr(agent.actions[t], time= t))
+def func1(
+    t,
+    all_coords,
+    non_outer_wall_coords,
+    walls_grid,
+    sensorModel_arg,
+    successorAxioms_arg,
+    percepts_arg,
+    agent,
+    KB,
+):
+    KB.append(
+        pacphysicsAxioms(
+            t,
+            all_coords,
+            non_outer_wall_coords,
+            walls_grid,
+            sensorModel=sensorModel_arg,
+            successorAxioms=successorAxioms_arg,
+        )
+    )
+    KB.append(PropSymbolExpr(agent.actions[t], time=t))
     KB.append(percepts_arg(t, agent.getPercepts()))
 
-def func2(t, non_outer_wall_coords, possible_locations, KB):
 
+def func2(t, non_outer_wall_coords, possible_locations, KB):
     for x, y in non_outer_wall_coords:
-        
         """Find all the possible locations for pacman at timestep t"""
-        if findModel(conjoin(KB) & PropSymbolExpr(pacman_str, x, y, time= t)) != False:
+        if findModel(conjoin(KB) & PropSymbolExpr(pacman_str, x, y, time=t)) != False:
             possible_locations.append((x, y))
 
         """Locations where pacman is and isn't provably correspondingly"""
-        if entails(conjoin(KB), PropSymbolExpr(pacman_str, x, y, time= t)):
-            KB.append(PropSymbolExpr(pacman_str, x, y, time= t))
-        elif entails(conjoin(KB), ~PropSymbolExpr(pacman_str, x, y, time= t)):
-            KB.append(~PropSymbolExpr(pacman_str, x, y, time= t))
+        if entails(conjoin(KB), PropSymbolExpr(pacman_str, x, y, time=t)):
+            KB.append(PropSymbolExpr(pacman_str, x, y, time=t))
+        elif entails(conjoin(KB), ~PropSymbolExpr(pacman_str, x, y, time=t)):
+            KB.append(~PropSymbolExpr(pacman_str, x, y, time=t))
 
 
 def localization(problem, agent) -> Generator:
@@ -544,20 +561,26 @@ def localization(problem, agent) -> Generator:
     """
     walls_grid = problem.walls
     walls_list = walls_grid.asList()
-    all_coords = list(itertools.product(range(problem.getWidth()+2), range(problem.getHeight()+2)))
-    non_outer_wall_coords = list(itertools.product(range(1, problem.getWidth()+1), range(1, problem.getHeight()+1)))
+    all_coords = list(
+        itertools.product(range(problem.getWidth() + 2), range(problem.getHeight() + 2))
+    )
+    non_outer_wall_coords = list(
+        itertools.product(
+            range(1, problem.getWidth() + 1), range(1, problem.getHeight() + 1)
+        )
+    )
 
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    #Append the coords that we know there is a wall
+    # Append the coords that we know there is a wall
     for x, y in walls_list:
         KB.append(PropSymbolExpr(wall_str, x, y))
-    
-    #Make a list without the coords of the walls
+
+    # Make a list without the coords of the walls
     list_no_walls = [item for item in all_coords if item not in walls_list]
 
-    #Append them to KB
+    # Append them to KB
     for x, y in list_no_walls:
         KB.append(~PropSymbolExpr(wall_str, x, y))
 
@@ -567,8 +590,18 @@ def localization(problem, agent) -> Generator:
 
         """Call the helper functions that are implemented above"""
 
-        func1(t, all_coords, non_outer_wall_coords, walls_grid, sensorAxioms, allLegalSuccessorAxioms, fourBitPerceptRules, agent, KB)
-        func2(t, non_outer_wall_coords, possible_locations, KB)  
+        func1(
+            t,
+            all_coords,
+            non_outer_wall_coords,
+            walls_grid,
+            sensorAxioms,
+            allLegalSuccessorAxioms,
+            fourBitPerceptRules,
+            agent,
+            KB,
+        )
+        func2(t, non_outer_wall_coords, possible_locations, KB)
         agent.moveToNextState(agent.actions[t])
 
         "*** END YOUR CODE HERE ***"
@@ -595,12 +628,10 @@ def mapping(problem, agent) -> Generator:
         )
     )
 
-
     known_map = [
         [-1 for y in range(problem.getHeight() + 2)]
         for x in range(problem.getWidth() + 2)
     ]
-
 
     outer_wall_sent = []
     for x, y in all_coords:
@@ -611,13 +642,17 @@ def mapping(problem, agent) -> Generator:
             outer_wall_sent.append(PropSymbolExpr(wall_str, x, y))
     KB.append(conjoin(outer_wall_sent))
     "*** BEGIN YOUR CODE HERE ***"
+    # Add initial Pacman position to the knowledge base
     KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
     if known_map[pac_x_0][pac_y_0] == 1:
         KB.append(PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
     elif known_map[pac_x_0][pac_y_0] == 0:
         KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
-  
+
     for t in range(agent.num_timesteps):
+        # Add the current action
+        action_t = agent.actions[t]
+        KB.append(PropSymbolExpr(action_t, time=t))
 
         pacphysics_axioms = pacphysicsAxioms(
             t,
@@ -629,15 +664,8 @@ def mapping(problem, agent) -> Generator:
         )
         KB.append(pacphysics_axioms)
 
-
-        action_t = agent.actions[t]
-        KB.append(PropSymbolExpr(action_t, time=t))
-
-      
         percepts = agent.getPercepts()
-        percept_rules = fourBitPerceptRules(
-            t=t, percepts=percepts
-        )  
+        percept_rules = fourBitPerceptRules(t=t, percepts=percepts)
         KB.append(percept_rules)
 
         # Find high_prob wall locations
@@ -655,7 +683,6 @@ def mapping(problem, agent) -> Generator:
             elif coinjoin_kb_not_wall_location and not coinjoin_kb_wall_location:
                 KB.append(~wall_location_expr)
                 known_map[x][y] = 0 if coinjoin_kb_not_wall_location else -1
-            
 
         agent.moveToNextState(action_t)
 
@@ -686,12 +713,10 @@ def slam(problem, agent) -> Generator:
         )
     )
 
-
     known_map = [
         [-1 for y in range(problem.getHeight() + 2)]
         for x in range(problem.getWidth() + 2)
     ]
-
 
     outer_wall_sent = []
     for x, y in all_coords:
@@ -704,17 +729,17 @@ def slam(problem, agent) -> Generator:
 
     "*** BEGIN YOUR CODE HERE ***"
     # Initialize Pacman's initial location
- 
-    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
 
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
 
     if known_map[pac_x_0][pac_y_0] == 1:
         KB.append(PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
     elif known_map[pac_x_0][pac_y_0] == 0:
         KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
 
-
     for t in range(agent.num_timesteps):
+        action_t = agent.actions[t]
+        KB.append(PropSymbolExpr(action_t, time=t))
 
         pacphysics_axioms = pacphysicsAxioms(
             t,
@@ -726,15 +751,9 @@ def slam(problem, agent) -> Generator:
         )
         KB.append(pacphysics_axioms)
 
-        
-        action_t = agent.actions[t]
-        KB.append(PropSymbolExpr(action_t, time=t))
-
-
         percepts = agent.getPercepts()
-        percept_rules = numAdjWallsPerceptRules(
-            t=t, percepts=percepts
-        )  
+        percept_rules = numAdjWallsPerceptRules(t=t, percepts=percepts)
+
         KB.append(percept_rules)
 
         # Determine wall locations conclusively using the updated KB
@@ -775,8 +794,10 @@ def slam(problem, agent) -> Generator:
             # Verify whether the model aligns with the KB and indicates Pacman's presence at the current location
             if findModel(conjoin([conjoin_all_kb, pacman_location_expr])):
                 possible_locations.append((x, y))
-            print(f"Timestep {t}, Possible Pacman location at ({x}, {y}): {entails_kb_pacman_location}")
-            
+            print(
+                f"Timestep {t}, Possible Pacman location at ({x}, {y}): {entails_kb_pacman_location}"
+            )
+
             if entails_kb_pacman_location and not entails_kb_not_pacman_location:
                 KB.append(pacman_location_expr)
             elif entails_kb_not_pacman_location and not entails_kb_pacman_location:
@@ -788,9 +809,8 @@ def slam(problem, agent) -> Generator:
         print(f"Timestep {t}, Known Map:")
         for row in known_map:
             print(row)
-        # 
+        #
         yield (known_map, possible_locations)
-
 
 
 # Abbreviations
