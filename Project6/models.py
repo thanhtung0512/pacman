@@ -286,8 +286,8 @@ class LanguageIDModel(object):
 
         for x in xs[1:]:
             h = nn.Add(nn.Linear(x, self.W_initial), nn.Linear(h, self.W_hidden))
+            h = nn.ReLU(h)
 
-            
         return nn.Linear(h, self.W_output)
 
     def get_loss(self, xs, y):
@@ -308,7 +308,7 @@ class LanguageIDModel(object):
         predicted_scores = self.run(xs)
         return nn.SoftmaxLoss(predicted_scores, y)
 
-    def train(self, dataset, num_epochs=2, batch_size=1000):
+    def train(self, dataset, num_epochs=3, batch_size=300):
         """
         Trains the model.
         """
