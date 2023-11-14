@@ -464,13 +464,77 @@ def foodLogicPlan(problem) -> List:
 
     KB = []
 
-    "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
+    # Initialize Food[x,y]_t variables with the code
+    # PropSymbolExpr(food_str, x, y, time=t), where each variable is
+    # true if and only if there is a food at (x, y) at time t.
+    for x, y in food:
+        KB.append(PropSymbolExpr(food_str, x, y, time=0))
+
+    for t in range(0, 50):
+        print("t = ", t)
+
+        possibleCoords = []
+        for x, y in non_wall_coords:
+            possibleCoords.append(PropSymbolExpr(pacman_str, x, y, time=t))
+        KB.append(exactlyOne(possibleCoords))
+
+        allFood = []
+        for x, y in non_wall_coords:
+            allFood.append(PropSymbolExpr(food_str, x, y, time=t))
+
+        # goal assertion sentence must be true if and only if all of
+        # the food have been eaten. This happens when all Food[x,y]_t
+        # are false.
+        model = findModel(
+            conjoin(conjoin(KB), ~disjoin(allFood)),
+        )
+        if model:
+            return extractActionSequence(model, actions)
+
+        actionlist = []
+        for action in actions:
+            actionlist.append(PropSymbolExpr(action, time=t))
+        KB.append(exactlyOne(actionlist))
+
+        transitionModelSentences = []
+        for x, y in non_wall_coords:
+            transitionModelSentences.append(
+                pacmanSuccessorAxiomSingle(x, y, t + 1, walls)
+            )
+        KB += transitionModelSentences
+
+        # food successor axiom
+        for x, y in non_wall_coords:
+            P1 = PropSymbolExpr(food_str, x, y, time=t)
+            P2 = ~PropSymbolExpr(pacman_str, x, y, time=t)
+            C = PropSymbolExpr(food_str, x, y, time=t + 1)
+            KB.append(C % conjoin(P1, P2))
     "*** END YOUR CODE HERE ***"
 
 
 # ______________________________________________________________________________
 # QUESTION 6
+def func1(t, all_coords, non_outer_wall_coords, walls_grid, sensorModel_arg, successorAxioms_arg, percepts_arg, agent, KB):
+
+    KB.append(pacphysicsAxioms(t, all_coords, non_outer_wall_coords, walls_grid, sensorModel= sensorModel_arg ,successorAxioms= successorAxioms_arg))
+    KB.append(PropSymbolExpr(agent.actions[t], time= t))
+    KB.append(percepts_arg(t, agent.getPercepts()))
+
+def func2(t, non_outer_wall_coords, possible_locations, KB):
+
+    for x, y in non_outer_wall_coords:
+        
+        """Find all the possible locations for pacman at timestep t"""
+        if findModel(conjoin(KB) & PropSymbolExpr(pacman_str, x, y, time= t)) != False:
+            possible_locations.append((x, y))
+
+        """Locations where pacman is and isn't provably correspondingly"""
+        if entails(conjoin(KB), PropSymbolExpr(pacman_str, x, y, time= t)):
+            KB.append(PropSymbolExpr(pacman_str, x, y, time= t))
+        elif entails(conjoin(KB), ~PropSymbolExpr(pacman_str, x, y, time= t)):
+            KB.append(~PropSymbolExpr(pacman_str, x, y, time= t))
 
 
 def localization(problem, agent) -> Generator:
@@ -480,21 +544,33 @@ def localization(problem, agent) -> Generator:
     """
     walls_grid = problem.walls
     walls_list = walls_grid.asList()
-    all_coords = list(
-        itertools.product(range(problem.getWidth() + 2), range(problem.getHeight() + 2))
-    )
-    non_outer_wall_coords = list(
-        itertools.product(
-            range(1, problem.getWidth() + 1), range(1, problem.getHeight() + 1)
-        )
-    )
+    all_coords = list(itertools.product(range(problem.getWidth()+2), range(problem.getHeight()+2)))
+    non_outer_wall_coords = list(itertools.product(range(1, problem.getWidth()+1), range(1, problem.getHeight()+1)))
 
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    #Append the coords that we know there is a wall
+    for x, y in walls_list:
+        KB.append(PropSymbolExpr(wall_str, x, y))
+    
+    #Make a list without the coords of the walls
+    list_no_walls = [item for item in all_coords if item not in walls_list]
+
+    #Append them to KB
+    for x, y in list_no_walls:
+        KB.append(~PropSymbolExpr(wall_str, x, y))
 
     for t in range(agent.num_timesteps):
+        print(t)
+        possible_locations = []
+
+        """Call the helper functions that are implemented above"""
+
+        func1(t, all_coords, non_outer_wall_coords, walls_grid, sensorAxioms, allLegalSuccessorAxioms, fourBitPerceptRules, agent, KB)
+        func2(t, non_outer_wall_coords, possible_locations, KB)  
+        agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield possible_locations
 
