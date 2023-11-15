@@ -137,6 +137,9 @@ def findModelUnderstandingCheck() -> Dict[Expr, bool]:
     a = Expr("A")
     "*** BEGIN YOUR CODE HERE ***"
     print("a.__dict__ is:", a.__dict__)  # might be helpful for getting ideas
+    a.__dict__['op'] = 'a'
+    dict_res = {a: True}
+    return dict_res
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -155,7 +158,9 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
+    return assignments == findModel(~inverse_statement)
     util.raiseNotDefined()
+
     "*** END YOUR CODE HERE ***"
 
 
