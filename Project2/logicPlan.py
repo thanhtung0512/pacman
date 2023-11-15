@@ -76,6 +76,16 @@ def sentence2() -> Expr:
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr('A') 
+    B = Expr('B') 
+    C = Expr('C') 
+    D = Expr('D') 
+    firstExpression = C % (B | D) 
+    secondExpression = A >> ((~B) & (~D)) 
+    thirdExpression = (~(B & (~C))) >> A 
+    fourthExpression = ~D >> C 
+    result = conjoin([firstExpression, secondExpression, thirdExpression, fourthExpression]) 
+    return result
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
