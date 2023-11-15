@@ -99,6 +99,12 @@ class DigitClassificationModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        self.batch_size = 2
+        self.wf = nn.Parameter(784, 60)
+        self.bf = nn.Parameter(1, 60)
+        self.wr = nn.Parameter(60, 10)
+        self.br = nn.Parameter(1, 10)
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -115,6 +121,9 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        relued = nn.ReLU(nn.AddBias(nn.Linear(x, self.wf), self.bf))
+        return nn.AddBias(nn.Linear(relued, self.wr), self.br)
+    
     def get_loss(self, x, y):
         """
         Computes the loss for a batch of examples.
@@ -130,11 +139,28 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        return nn.SoftmaxLoss(self.run(x), y)
+    
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+
+        mistakes = 1
+        while mistakes > 0:
+            mistakes = 0
+            for x, y in dataset.iterate_once(self.batch_size):
+                losses = self.get_loss(x, y)
+                gradient = nn.gradients(losses, [self.wf, self.wr, self.bf, self.br])
+                self.wf.update(gradient[0], -0.009)
+                self.wr.update(gradient[1], -0.009)
+                self.bf.update(gradient[2], -0.009)
+                self.br.update(gradient[3], -0.009)
+                
+            val = dataset.get_validation_accuracy()
+            if val < 0.97:
+                mistakes += 1
 
 class LanguageIDModel(object):
     """

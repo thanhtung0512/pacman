@@ -473,7 +473,6 @@ def foodLogicPlan(problem) -> List:
         KB.append(PropSymbolExpr(food_str, x, y, time=0))
 
     for t in range(0, 50):
-        print("t = ", t)
 
         possibleCoords = []
         for x, y in non_wall_coords:
