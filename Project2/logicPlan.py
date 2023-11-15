@@ -439,7 +439,19 @@ def checkLocationSatisfiability(
     KB.append(conjoin(map_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    KB.append(pacphysicsAxioms(0, all_coords, non_outer_wall_coords, walls_grid))
+    KB.append(pacphysicsAxioms(1, all_coords, non_outer_wall_coords, walls_grid, None, allLegalSuccessorAxioms))
+
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+    KB.append(PropSymbolExpr(action0, time=0))
+
+    KB.append(PropSymbolExpr(action1, time=1))
+
+    model1 = findModel(conjoin(conjoin(KB), PropSymbolExpr(pacman_str, x1, y1, time=1)))
+    model2 = findModel(conjoin(conjoin(KB), ~PropSymbolExpr(pacman_str, x1, y1, time=1)))
+    
+    return (model1, model2)
+
     "*** END YOUR CODE HERE ***"
 
 
@@ -467,7 +479,28 @@ def positionLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+    for t in range(0, 50):
+        print("t = ", t)
+        possibleCoords = []
+        for x, y in non_wall_coords:
+            possibleCoords.append(PropSymbolExpr(pacman_str, x, y, time=t))
+        KB.append(exactlyOne(possibleCoords))
+        model = findModel(
+            conjoin(conjoin(KB), PropSymbolExpr(pacman_str, xg, yg, time=t))
+        )
+        if model:
+            return extractActionSequence(model, actions)
+        actionlist = []
+        for action in actions:
+            actionlist.append(PropSymbolExpr(action, time=t))
+        KB.append(exactlyOne(actionlist))
+        transitionModelSentences = []
+        for x, y in non_wall_coords:
+            transitionModelSentences.append(
+                pacmanSuccessorAxiomSingle(x, y, t + 1, walls_grid)
+            )
+        KB += transitionModelSentences
     "*** END YOUR CODE HERE ***"
 
 
