@@ -183,9 +183,17 @@ class DigitClassificationModel(object):
     working on this part of the project.)
     """
 
-    def __init__(self):
+    def __init__(self, hidden_size=200, learning_rate=0.5):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.hidden_size = hidden_size
+        self.learning_rate = learning_rate
+
+        # Define weights and biases
+        self.W_hidden = nn.Parameter(784, self.hidden_size)
+        self.b_hidden = nn.Parameter(1, self.hidden_size)
+        self.W_output = nn.Parameter(self.hidden_size, 10)
+        self.b_output = nn.Parameter(1, 10)
 
     def run(self, x):
         """
@@ -202,6 +210,12 @@ class DigitClassificationModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        # Apply ReLU activation to the hidden layer
+        hidden_layer = nn.ReLU(nn.AddBias(nn.Linear(x, self.W_hidden), self.b_hidden))
+
+        # Output layer without ReLU activation
+        output_layer = nn.AddBias(nn.Linear(hidden_layer, self.W_output), self.b_output)
+        return output_layer
 
     def get_loss(self, x, y):
         """
@@ -217,12 +231,38 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(x), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        batch_size = 50
+        num_epochs = 5
+
+        for epoch in range(num_epochs):
+            total_loss = 0.0
+            num_batches = 0
+
+            for x, y in dataset.iterate_once(batch_size):
+                # Forward pass
+                loss = self.get_loss(x, y)
+
+                # Backward pass and parameter update
+                grads = nn.gradients(
+                    loss, [self.W_hidden, self.b_hidden, self.W_output, self.b_output]
+                )
+                self.W_hidden.update(grads[0], -self.learning_rate)
+                self.b_hidden.update(grads[1], -self.learning_rate)
+                self.W_output.update(grads[2], -self.learning_rate)
+                self.b_output.update(grads[3], -self.learning_rate)
+
+                total_loss += nn.as_scalar(loss)
+                num_batches += 1
+
+            average_loss = total_loss / num_batches
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss}")
 
 
 class LanguageIDModel(object):
