@@ -186,11 +186,11 @@ class DigitClassificationModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-
-        self.batch_size = 2
-        self.wf = nn.Parameter(784, 60)
-        self.bf = nn.Parameter(1, 60)
-        self.wr = nn.Parameter(60, 10)
+        self.learning_rate = 0.5
+        self.batch_size = 200
+        self.wf = nn.Parameter(784, 200)
+        self.bf = nn.Parameter(1, 200)
+        self.wr = nn.Parameter(200, 10)
         self.br = nn.Parameter(1, 10)
 
     def run(self, x):
@@ -242,13 +242,13 @@ class DigitClassificationModel(object):
             for x, y in dataset.iterate_once(self.batch_size):
                 losses = self.get_loss(x, y)
                 gradient = nn.gradients(losses, [self.wf, self.wr, self.bf, self.br])
-                self.wf.update(gradient[0], -0.009)
-                self.wr.update(gradient[1], -0.009)
-                self.bf.update(gradient[2], -0.009)
-                self.br.update(gradient[3], -0.009)
+                self.wf.update(gradient[0], -self.learning_rate)
+                self.wr.update(gradient[1], -self.learning_rate)
+                self.bf.update(gradient[2], -self.learning_rate)
+                self.br.update(gradient[3], -self.learning_rate)
                 
             val = dataset.get_validation_accuracy()
-            if val < 0.97:
+            if val < 0.970001:
                 mistakes += 1
 
 
