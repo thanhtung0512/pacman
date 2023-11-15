@@ -55,6 +55,13 @@ def sentence1() -> Expr:
     (not A) or (not B) or C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+    a_or_b = disjoin(A, B)
+    expr2 = ~A % disjoin(~B, C)
+    expr3 = disjoin(~A, ~B, C)
+    return conjoin(a_or_b, expr2, expr3)
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -68,6 +75,15 @@ def sentence2() -> Expr:
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+    D = Expr("D")
+    expr1 = C % disjoin(B, D)
+    expr2 = A >> conjoin(~B, ~D)
+    expr3 = ~conjoin(B, ~C) >> A
+    expr4 = ~D >> C
+    return conjoin(expr1, expr2, expr3, expr4)
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -85,6 +101,17 @@ def sentence3() -> Expr:
     Pacman is born at time 0.
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A0 = Expr("PacmanAlive_0")
+    A1 = Expr("PacmanAlive_1")
+    B0 = Expr("PacmanBorn_0")
+    K0 = Expr("PacmanKilled_0")
+
+    expr = []
+    expr.append(A1 % ((A0 & ~K0) | (~A0 & B0)))
+    expr.append(~(A0 & B0))
+    expr.append(B0)
+
+    return conjoin(expr)
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -103,7 +130,15 @@ def findModelUnderstandingCheck() -> Dict[Expr, bool]:
     """
     a = Expr("A")
     "*** BEGIN YOUR CODE HERE ***"
-    print("a.__dict__ is:", a.__dict__)  # might be helpful for getting ideas
+    # print("a.__dict__ is:", a.__dict__)  # might be helpful for getting ideas
+    class dummy:
+        def __init__(self, v: str = 'A'):
+            self.variable_name = v
+        
+        def __repr__(self):
+            return self.variable_name
+    
+    return {dummy('a'): True}
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -122,6 +157,10 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
+    if pl_true(inverse_statement, assignments):
+        return False
+    else:
+        return True
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
