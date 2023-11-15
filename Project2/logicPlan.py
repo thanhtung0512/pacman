@@ -55,6 +55,14 @@ def sentence1() -> Expr:
     (not A) or (not B) or C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+    firstExpression = A | B
+    secondExpression = (~A) % ((~B) | C)
+    thridExpression = disjoin([(~A), (~B), C])
+    result = conjoin([firstExpression, secondExpression, thridExpression])
+    return result
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -68,6 +76,18 @@ def sentence2() -> Expr:
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+    D = Expr("D")
+    firstExpression = C % (B | D)
+    secondExpression = A >> ((~B) & (~D))
+    thirdExpression = (~(B & (~C))) >> A
+    fourthExpression = ~D >> C
+    result = conjoin(
+        [firstExpression, secondExpression, thirdExpression, fourthExpression]
+    )
+    return result
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -85,6 +105,19 @@ def sentence3() -> Expr:
     Pacman is born at time 0.
     """
     "*** BEGIN YOUR CODE HERE ***"
+    pacAliveAtTime0 = PropSymbolExpr("PacmanAlive", time=0)
+    pacAliveAtTime1 = PropSymbolExpr("PacmanAlive", time=1)
+
+    pacBornAtTime0 = PropSymbolExpr("PacmanBorn", time=0)
+    pacBeKilledAtTime0 = PropSymbolExpr("PacmanKilled", time=0)
+
+    firstExpression = pacAliveAtTime1 % (
+        (pacAliveAtTime0 & (~pacBeKilledAtTime0))
+        | ((~pacAliveAtTime0) & (pacBornAtTime0))
+    )
+    secondExpression = ~(pacAliveAtTime0 & pacBornAtTime0)
+    res = conjoin([firstExpression, secondExpression, pacBornAtTime0])
+    return res
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
