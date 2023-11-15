@@ -55,6 +55,14 @@ def sentence1() -> Expr:
     (not A) or (not B) or C
     """
     "*** BEGIN YOUR CODE HERE ***"
+    A = Expr('A') 
+    B = Expr('B') 
+    C = Expr('C') 
+    firstExpression = A | B 
+    secondExpression = (~A) % ((~B) | C) 
+    thridExpression = disjoin([(~A), (~B), C]) 
+    result = conjoin([firstExpression, secondExpression, thridExpression]) 
+    return result
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
